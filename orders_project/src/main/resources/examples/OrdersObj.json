@@ -1,0 +1,10 @@
+{
+  "orderId": "OD101",
+  "productCode": "P101",
+  "orderDate": "20 Jan,2020",
+  "shippedDate": "25 Jan,2020",
+  "customerNumber": "C101",
+  "Status": "Waiting",
+  "Price": 2000,
+  "Quantity": 1
+}

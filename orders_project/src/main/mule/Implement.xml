@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	
+	
+	<flow name="GetallOrders" doc:id="0e9a8910-aef9-459c-ba19-0a2283aa5701" >
+		<db:select doc:name="Select" doc:id="ca496868-96fd-4211-ad57-7dce0e9aeb9c" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from  ORDERS]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="7f8ead3b-93bf-4f95-a0db-bdcb93a4e7a0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	orderId: payload01.ORDER_NUMBER,
+	productCode: payload01.PRODUCT_CODE,
+	orderDate: payload01.ORDER_DATE as String{format:"dd-MMM-yyyy"} ,
+	shippedDate: payload01.SHIPPED_DATE as String {format:"dd-MMM-yyyy"},
+	customerNumber: payload01.CUSTOMER_NUMBER,
+	Status: payload01.STATUS default "",
+	Price: payload01.PRICE,
+	Quantity: payload01.QUANTITY default 0
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="GetById" doc:id="e014e8c6-1418-411b-b7e4-9755c50fb0ba" >
+		<db:query-single doc:name="Query single" doc:id="e9402582-25bd-44b7-b15f-e11bb25701d0" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from ORDERS where ORDER_NUMBER = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	id : vars.ID
+}]]]></db:input-parameters>
+		</db:query-single>
+		<choice doc:name="Choice" doc:id="adcbf4ff-4e0c-4048-851a-ae0b7cc2274f" >
+			<when expression="#[sizeOf(payload) &gt;0]">
+				<ee:transform doc:name="Transform Message" doc:id="3521d076-f608-4373-9e30-5e241c093949" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	orderId: payload.ORDER_NUMBER,
+	productCode: payload.PRODUCT_CODE,
+	orderDate: payload.ORDER_DATE as String{format: "dd-MMM-YYYY"} default "",
+	shippedDate: payload.SHIPPED_DATE as String{format: "dd-MMM-YYYY"} default "",
+	customerNumber: payload.CUSTOMER_NUMBER,
+	Status: payload.STATUS default "",
+	Price: payload.PRICE,
+	Quantity: payload.QUANTITY default 0
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="2cc52962-2614-4767-93af-0807373f9728" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message : "Given Id not found"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[500]" doc:name="Set Variable" doc:id="f350a03e-4e1f-494c-a9e2-4776f756dbe1" variableName="httpStatus"/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="DeleteFlow" doc:id="6009dcd8-7c4c-437e-8897-aa85c8f19f56" >
+		<db:query-single doc:name="Query single" doc:id="28223ee0-dab2-429d-8eb8-588847053628" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from ORDERS where ORDER_NUMBER = :id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	id : vars.ID
+}]]]></db:input-parameters>
+		</db:query-single>
+		<choice doc:name="Choice" doc:id="8ccacf85-0b00-48e9-af43-ec780ba13858" >
+			<when expression="#[sizeOf(payload) &gt;0]">
+				<db:delete doc:name="Delete" doc:id="1619bda3-5ffc-42cd-a8c5-99676d109ea2" config-ref="Database_Config">
+					<db:sql ><![CDATA[delete from ORDERS where ORDER_NUMBER = :id]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	id : vars.ID
+}]]]></db:input-parameters>
+				</db:delete>
+				<ee:transform doc:name="Transform Message" doc:id="b31064ec-e20c-4bca-85f2-6e8d36a27dc6" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message : "Deleted the Order with Id : "  ++ vars.ID as String
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="0334cbc4-30b5-498c-be73-ff6293f01f80" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message : "Given Id not found"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[500]" doc:name="Set Variable" doc:id="bd0a34e7-6446-49a4-9630-2a86fb85d8cd" variableName="httpStatus"/>
+			</otherwise>
+		</choice>
+	</flow>
+	<sub-flow name="VarSub_flow" doc:id="32f5dae7-4db3-4c7b-9db6-b51f56ae0aaa" >
+		<set-variable value="#[message.payload.productCode]" doc:name="prodCode" doc:id="275dcb5c-dce0-4452-bda0-f08c45c9408e" variableName="ProdCode"/>
+		<set-variable value='#[message.payload.orderDate as Date{format : "yyyy-MMM-dd"}as Date]' doc:name="Odate" doc:id="28045e6d-45e8-4b6f-ab61-20ad8758f3ae" variableName="Odate"/>
+		<set-variable value='#[message.payload.shippedDate as Date{format : "yyyy-MMM-dd"}as Date]' doc:name="SDate" doc:id="caeec110-be5b-4cbe-9373-ba802fe88704" variableName="Sdate"/>
+		<set-variable value="#[message.payload.customerNumber]" doc:name="CustId" doc:id="571e74f6-ef16-43e3-bb97-52b51523b8bb" variableName="Cnum"/>
+		<set-variable value="#[message.payload.Status]" doc:name="Status" doc:id="2ae48990-9034-419e-8ffe-ac8aaadd96dc" variableName="status"/>
+		<set-variable value="#[message.payload.Price]" doc:name="Price" doc:id="db62f069-e238-4c80-b8eb-e805c6b2b1a2" variableName="Price"/>
+		<set-variable value="#[message.payload.Quantity]" doc:name="Quantity" doc:id="abd6cf54-ccfd-4f9a-8859-04169b218194" variableName="Quantity"/>
+	</sub-flow>
+	<flow name="PostFlow" doc:id="1cc97bd7-cc85-4ada-bd8f-bbd179fee227" >
+		<flow-ref doc:name="Flow Reference" doc:id="1dc3a59c-ae97-47d1-bcde-1e7178f09da0" name="VarSub_flow"/>
+		<db:query-single doc:name="Query single" doc:id="8faff81c-1627-47db-a767-cf50233cbef1" config-ref="Database_Config">
+			<db:sql ><![CDATA[select max(ORDER_NUMBER) from ORDERS]]></db:sql>
+		</db:query-single>
+		<set-variable value='#["OD" ++ ((payload."max(ORDER_NUMBER)"[2 to 4]as Number)+1)]' doc:name="Oid" doc:id="951b6e68-2989-4c18-b109-fe1807650fd3" variableName="Oid"/>
+		<db:insert doc:name="Insert" doc:id="0b5f76b0-6c17-4ae6-be22-5e2bdea13d34" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT into ORDERS(ORDER_NUMBER,PRODUCT_CODE,ORDER_DATE,SHIPPED_DATE,PRICE,QUANTITY,STATUS,CUSTOMER_NUMBER) VALUES(:Oid,:Pid,:odate,:sdate,:price,:quan,:status,:cid)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	Oid : vars.Oid,
+	Pid : vars.ProdCode,
+	odate : vars.Odate,
+	sdate : vars.Sdate,
+	price : vars.Price,
+	quan : vars.Quantity,
+	status : vars.status,
+	cid : vars.Cnum
+}]]]></db:input-parameters>
+		</db:insert>
+		<ee:transform doc:name="Transform Message" doc:id="04de7df7-4c34-4706-8b87-abe420402b29" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message : "Order Created with Id : " ++ vars.Oid as String
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="PatchFlow" doc:id="1e6340cb-47f4-4595-ad43-481d88abff2d" >
+		<flow-ref doc:name="Flow Reference" doc:id="7bdff7d9-cbb9-4102-a454-5347bfccfcf3" name="VarSub_flow"/>
+		<db:update doc:name="Update" doc:id="7be63e16-29ca-4bd4-b5a8-56824b87dc19" config-ref="Database_Config">
+			<db:sql><![CDATA[Update ORDERS set Status = :status where ORDER_NUMBER = :Oid]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+    Status : vars.status,
+	Oid : vars.ID
+}]]]></db:input-parameters>
+		</db:update>
+		<choice doc:name="Choice" doc:id="e5eb7cd2-2774-44c1-a719-747378c0d752" >
+			<when expression="#[payload.affectedRows &gt; 0]">
+				<ee:transform doc:name="Transform Message" doc:id="9a16f4ab-d351-42fa-bd83-5aac6fe065a0">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message : "Quantity is updated in the Orders with Id : " ++ vars.ID as String
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="7735e5df-f7fa-4a9a-9c4a-d6a96d69853f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message : "Given Id not found to update"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[500]" doc:name="Set Variable" doc:id="d6955f6c-1740-4839-ba94-da358d91d0fd" variableName="httpStatus"/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="PutFlow" doc:id="2f0db4be-fc3b-4bfa-909e-54063dff5317" >
+		<flow-ref doc:name="Flow Reference" doc:id="127c2f91-5c9a-4b3c-9766-bad0c4f36213" name="VarSub_flow"/>
+		<db:query-single doc:name="Query single" doc:id="c1ff4a1c-c762-4bfa-8012-b4d0fdb5774e" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from ORDERS where ORDER_NUMBER =:Oid]]></db:sql>
+			<db:input-parameters ><![CDATA[#[Oid : vars.ID]]]></db:input-parameters>
+		</db:query-single>
+		<choice doc:name="Choice" doc:id="9ac2a4af-ff75-4127-b069-e1588c23be28" >
+			<when expression="#[sizeOf(payload) &gt; 0]">
+				<db:update doc:name="Update" doc:id="3de45188-0443-411e-894d-1b5c94c47941" config-ref="Database_Config">
+					<db:sql ><![CDATA[UPDATE ORDERS set PRODUCT_CODE = :Pid,ORDER_DATE = :Odate,SHIPPED_DATE= :Sdate,PRICE = :price,QUANTITY = :quan,STATUS = :status,CUSTOMER_NUMBER = :Cid Where ORDER_NUMBER = :Oid]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	Pid : vars.ProdCode,
+	Odate : vars.Odate,
+	Sdate : vars.Sdate,
+	price : vars.Price,
+	quan : vars.Quantity,
+	status : vars.status,
+	Cid : vars.Cnum,
+	Oid : vars.ID
+	}]]]></db:input-parameters>
+				</db:update>
+				<ee:transform doc:name="Transform Message" doc:id="98e4d572-5868-469d-8207-b9b71e8979dd" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message : "Order details are Replaced for Id : " ++ vars.ID as String
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<db:insert doc:name="Insert" doc:id="37b2a3f1-40c4-4183-a6b1-b44ca4c4aa12" config-ref="Database_Config">
+					<db:sql ><![CDATA[INSERT into ORDERS(ORDER_NUMBER,PRODUCT_CODE,ORDER_DATE,SHIPPED_DATE,PRICE,QUANTITY,STATUS,CUSTOMER_NUMBER) VALUES(:Oid,:Pid,:odate,:sdate,:price,:quan,:status,:cid)]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	Oid : vars.ID,
+	Pid : vars.ProdCode,
+	odate : vars.Odate,
+	sdate : vars.Sdate,
+	price : vars.Price,
+	quan : vars.Quantity,
+	status : vars.status,
+	cid : vars.Cnum
+}]]]></db:input-parameters>
+				</db:insert>
+				<ee:transform doc:name="Transform Message" doc:id="66517cd7-fda2-49d0-beb1-6a251ee6f0c7" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message : "Order Inserted with Id : " ++ vars.ID as String
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+	
+	</mule>

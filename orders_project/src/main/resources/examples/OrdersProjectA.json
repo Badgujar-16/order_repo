@@ -1,0 +1,22 @@
+[  
+  {
+     "orderId": "OD101",
+     "productCode": "P101",
+     "orderDate": "2020-Jan-10",
+     "shippedDate": "2020-Jan-12",
+     "customerNumber": "C101",
+     "Status": "Waiting",
+     "Price": 80100,
+     "Quantity": 1
+  },
+  {
+     "orderId": "OD102",
+     "productCode": "P101",
+     "orderDate": "2020-Feb-10",
+     "shippedDate": "2020-Feb-12",
+     "customerNumber": "C102",
+     "Status": "Shipped",
+     "Price": 2300,
+     "Quantity": 2
+  }
+]

@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="orders" format="json">
+      <types:shape format="weave" example="examples/OrdersProjectA.json"><![CDATA[%dw 2.0
+
+type orders = Array<{|  orderId: String,   productCode: String,   orderDate: String,   shippedDate: String,   customerNumber: String,   Status: String,   Price: Number {"typeId": "int"},   Quantity: Number {"typeId": "int"}|}> {"example": "[{\\\"orderId\\\":\\\"OD101\\\",\\\"productCode\\\":\\\"P101\\\",\\\"orderDate\\\":\\\"2020-Jan-10\\\",\\\"shippedDate\\\":\\\"2020-Jan-12\\\",\\\"customerNumber\\\":\\\"C101\\\",\\\"Status\\\":\\\"Waiting\\\",\\\"Price\\\":80100,\\\"Quantity\\\":1},{\\\"orderId\\\":\\\"OD102\\\",\\\"productCode\\\":\\\"P101\\\",\\\"orderDate\\\":\\\"2020-Feb-10\\\",\\\"shippedDate\\\":\\\"2020-Feb-12\\\",\\\"customerNumber\\\":\\\"C102\\\",\\\"Status\\\":\\\"Shipped\\\",\\\"Price\\\":2300,\\\"Quantity\\\":2}]"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="Obj" format="json">
+      <types:shape format="weave" example="examples/OrdersObj.json"><![CDATA[%dw 2.0
+
+type Obj = {|
+  orderId: String, 
+  productCode: String, 
+  orderDate: String, 
+  shippedDate: String, 
+  customerNumber: String, 
+  Status: String, 
+  Price: Number {"typeId": "int"}, 
+  Quantity: Number {"typeId": "int"}
+|} {"example": "{\\\"orderId\\\":\\\"OD101\\\",\\\"productCode\\\":\\\"P101\\\",\\\"orderDate\\\":\\\"20 Jan,2020\\\",\\\"shippedDate\\\":\\\"25 Jan,2020\\\",\\\"customerNumber\\\":\\\"C101\\\",\\\"Status\\\":\\\"Waiting\\\",\\\"Price\\\":2000,\\\"Quantity\\\":1}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#7f8ead3b-93bf-4f95-a0db-bdcb93a4e7a0">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="orders"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#3521d076-f608-4373-9e30-5e241c093949">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="Obj"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>
